@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 /* ============================= */
-/* Lotus Mart Brand Variables   */
+/* Lotus Mart Brand Theme        */
 /* ============================= */
 
 :root {
@@ -10,69 +10,100 @@
   --lm-gold-soft: #e6c87a;
   --lm-black: #0b0b0b;
   --lm-black-soft: #141414;
+  --lm-white: #ffffff;
 }
 
-/* ============================= */
-/* Global Base Styling           */
-/* ============================= */
-
+/* Base */
 html,
 body {
-  background-color: var(--lm-black);
-  color: white;
   min-height: 100%;
+  background: var(--lm-black);
+  color: var(--lm-white);
 }
 
-/* Smooth typography */
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+}
+
+/* Optional: nicer selection */
+::selection {
+  background: rgba(214, 178, 94, 0.35);
 }
 
 /* ============================= */
-/* Reusable Utility Classes      */
+/* Custom “Lotus Mart” helpers   */
+/* (Plain CSS — no @apply)       */
 /* ============================= */
 
 .lm-container {
-  @apply mx-auto max-w-6xl px-4;
+  max-width: 72rem; /* ~ max-w-6xl */
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .lm-card {
-  @apply rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 shadow-lg;
-}
-
-.lm-button-primary {
-  @apply inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-medium transition;
-  background-color: var(--lm-gold);
-  color: black;
-}
-
-.lm-button-primary:hover {
-  background-color: var(--lm-gold-soft);
-}
-
-.lm-button-outline {
-  @apply inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-medium border border-white/20 transition;
-}
-
-.lm-button-outline:hover {
-  @apply bg-white/10;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  padding: 1.5rem;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
 .lm-badge {
-  @apply inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold tracking-wide;
-  background-color: var(--lm-gold);
-  color: black;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--lm-gold);
+  color: #000;
 }
 
-/* ============================= */
-/* Luxury Accent Effects         */
-/* ============================= */
+.lm-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 150ms ease, transform 150ms ease;
+  background: var(--lm-gold);
+  color: #000;
+}
+
+.lm-button-primary:hover {
+  background: var(--lm-gold-soft);
+  transform: translateY(-1px);
+}
+
+.lm-button-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  background: transparent;
+  color: #fff;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.lm-button-outline:hover {
+  background: rgba(255, 255, 255, 0.10);
+  transform: translateY(-1px);
+}
 
 .lm-gold-text {
   color: var(--lm-gold);
 }
 
 .lm-glow {
-  box-shadow: 0 0 20px rgba(214, 178, 94, 0.3);
+  box-shadow: 0 0 22px rgba(214, 178, 94, 0.30);
 }
