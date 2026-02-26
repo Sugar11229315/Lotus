@@ -2,166 +2,126 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ORDER_STORAGE_KEY, type Order, type OrderStatus } from "@/lib/order-store";
 
-function statusIndex(s: OrderStatus) {
-  return ["Placed", "Picking", "Ready", "Out for delivery", "Delivered"].indexOf(s);
+const stages = [
+  "Order received",
+  "Order transmitted to POS (preview)",
+  "Picking & packing",
+  "Driver assigned",
+  "Out for delivery",
+  "Delivered (proof of delivery)",
+];
+
+function isValidDemoId(orderId: string) {
+  return /^LM-\d{5}$/.test(orderId);
 }
 
-export default function TrackOrderPage({ params }: { params: { orderId: string } }) {
-  const orderId = decodeURIComponent(params.orderId);
-  const [order, setOrder] = useState<Order | null>(null);
+export function TrackingClient({ orderId }: { orderId: string }) {
+  const [step, setStep] = useState(3);
+
+  // ✅ Always show tracking UI if it's a valid demo-style order ID
+  const canDemo = useMemo(() => isValidDemoId(orderId), [orderId]);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(ORDER_STORAGE_KEY);
-      const list: Order[] = raw ? JSON.parse(raw) : [];
-      setOrder(list.find((o) => o.id === orderId) ?? null);
-    } catch {
-      setOrder(null);
-    }
-  }, [orderId]);
+    if (!canDemo) return;
 
-  const derivedStatus = useMemo(() => {
-    if (!order) return null;
-    const now = Date.now();
-    const idx = order.timeline.reduce((i, step, j) => {
-      if (new Date(step.at).getTime() <= now) return j;
-      return i;
-    }, 0);
-    return order.timeline[Math.max(0, idx)]?.label ?? order.status;
-  }, [order]);
+    const t = setInterval(() => {
+      setStep((s) => (s < stages.length - 1 ? s + 1 : s));
+    }, 2500);
 
-  if (!order) {
+    return () => clearInterval(t);
+  }, [canDemo]);
+
+  if (!canDemo) {
     return (
-      <div className="space-y-4">
-        <div className="card p-8 text-center">
-          <div className="text-lg font-semibold">Order not found</div>
-          <div className="mt-2 text-sm text-zinc-400">
-            This demo stores orders only in your browser. Try tracking from the same device.
-          </div>
-          <div className="mt-5 flex justify-center gap-2">
-            <Link className="btn btn-primary" href="/track">
-              Back to tracking
-            </Link>
-            <Link className="btn btn-ghost" href="/shop">
-              Shop
-            </Link>
-          </div>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold">Order not found</h1>
+        <p className="text-sm text-slate-600">
+          This preview supports tracking demo IDs like <span className="font-mono">LM-10293</span>.
+        </p>
+        <div className="flex gap-3">
+          <Link href="/track/LM-10293" className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-medium text-white">
+            Back to tracking
+          </Link>
+          <Link href="/shop" className="rounded-full border bg-white px-5 py-2 text-sm font-medium">
+            Shop
+          </Link>
         </div>
       </div>
     );
   }
 
-  const current = derivedStatus ?? order.status;
-  const currentIdx = statusIndex(current);
+  const eta = step < stages.length - 1 ? "18 min" : "Completed";
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex items-end justify-between">
         <div>
-          <div className="text-sm text-zinc-400">Order</div>
-          <h2 className="text-2xl font-semibold">{order.id}</h2>
-          <div className="mt-1 text-sm text-zinc-400">
-            Placed {new Date(order.createdAt).toLocaleString()} • Window: {order.deliveryWindow}
-          </div>
+          <h1 className="text-2xl font-semibold">Track your delivery</h1>
+          <p className="text-sm text-slate-600">
+            Order <span className="font-semibold">{orderId}</span> • Real-time tracking UI (Preview)
+          </p>
         </div>
-        <Link className="btn btn-ghost" href="/track">
-          ← Track another
+        <Link href="/shop" className="text-sm font-medium text-emerald-700 hover:underline">
+          Back to shop →
         </Link>
       </div>
 
-      <div className="card p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold">Current status</div>
-            <div className="mt-1 text-lg font-semibold gold-text">{current}</div>
-          </div>
-          <div className="text-sm text-zinc-400">
-            Driver + GPS tracking is simulated in this preview.
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-5">
-          {order.timeline.map((step, i) => {
-            const done = i <= currentIdx;
-            return (
-              <div
-                key={step.label}
-                className={`rounded-2xl border px-4 py-3 text-sm ${
-                  done
-                    ? "border-yellow-400/35 bg-yellow-400/10"
-                    : "border-zinc-800 bg-zinc-950/40"
-                }`}
-              >
-                <div className="font-semibold">{step.label}</div>
-                <div className="mt-1 text-xs text-zinc-500">
-                  {new Date(step.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <div className="card p-5">
-            <div className="text-sm font-semibold">Items</div>
-            <div className="mt-3 space-y-2">
-              {order.items.map((i) => (
-                <div
-                  key={i.id}
-                  className="flex items-start justify-between gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/40 px-4 py-3 text-sm"
-                >
-                  <div>
-                    <div className="font-semibold">{i.name}</div>
-                    <div className="text-xs text-zinc-500">Qty {i.qty}</div>
-                  </div>
-                  <div className="gold-text">${(i.price * i.qty).toFixed(2)}</div>
-                </div>
-              ))}
+        <div className="lg:col-span-2 rounded-3xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-slate-500">Driver status</div>
+              <div className="text-lg font-semibold">
+                {step >= 3 && step < 5 ? "Driver En Route" : step >= 5 ? "Delivered" : "Preparing"}
+              </div>
             </div>
+            <div className="rounded-2xl border bg-slate-50 px-4 py-2 text-sm">
+              ETA: <span className="font-semibold">{eta}</span>
+            </div>
+          </div>
+
+          <div className="mt-6 aspect-video w-full overflow-hidden rounded-2xl border bg-slate-50">
+            <div className="flex h-full items-center justify-center text-slate-500">
+              Map Placeholder (Preview)
+            </div>
+          </div>
+
+          <div className="mt-4 text-xs text-slate-500">
+            In the live system: real-time driver GPS, routing, and proof-of-delivery.
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="card p-5">
-            <div className="text-sm font-semibold">Delivery to</div>
-            <div className="mt-2 text-sm text-zinc-300">
-              <div className="font-semibold">{order.customer.name}</div>
-              <div className="text-zinc-400">{order.customer.phone}</div>
-              <div className="mt-2">{order.customer.address}</div>
-              {order.customer.notes ? (
-                <div className="mt-2 text-xs text-zinc-500">Notes: {order.customer.notes}</div>
-              ) : null}
-            </div>
+        <div className="rounded-3xl border bg-white p-6 shadow-sm">
+          <h2 className="font-semibold">Timeline</h2>
+          <div className="mt-4 space-y-3">
+            {stages.map((s, i) => {
+              const done = i <= step;
+              return (
+                <div key={s} className="flex items-start gap-3">
+                  <div
+                    className={`mt-1 h-3 w-3 rounded-full ${
+                      done ? "bg-emerald-600" : "bg-slate-300"
+                    }`}
+                  />
+                  <div>
+                    <div className={`text-sm ${done ? "font-medium" : "text-slate-500"}`}>
+                      {s}
+                    </div>
+                    {i === 3 && done && (
+                      <div className="text-xs text-slate-500">
+                        Dispatch powered by IslandSprint (preview)
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="card p-5">
-            <div className="text-sm font-semibold">Charges (preview)</div>
-            <div className="mt-3 space-y-2 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Subtotal</span>
-                <span>${order.subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Delivery</span>
-                <span>${order.deliveryFee.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Tax</span>
-                <span>${order.tax.toFixed(2)}</span>
-              </div>
-              <hr className="my-2" />
-              <div className="flex items-center justify-between font-semibold">
-                <span>Total</span>
-                <span className="gold-text">${order.total.toFixed(2)}</span>
-              </div>
-              <div className="mt-2 text-xs text-zinc-500">
-                Payment method: {order.paymentMethod}
-              </div>
-            </div>
+          <div className="mt-6 rounded-2xl border bg-emerald-50 p-4 text-xs text-emerald-900">
+            <div className="font-semibold">Service quality model</div>
+            Better driver economics → faster acceptance → stronger customer experience (preview messaging).
           </div>
         </div>
       </div>
